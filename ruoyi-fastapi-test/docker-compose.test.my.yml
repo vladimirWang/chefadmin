@@ -2,14 +2,15 @@ services:
   # 前端服务
   ruoyi-frontend:
     build:
-      context: ../ruoyi-fastapi-frontend
-      dockerfile: Dockerfile
+      context: ../nginx
+      args:
+        NGINX_SITE: my
     image: ruoyi-frontend:latest
     container_name: ruoyi-frontend-test
     ports:
       - "80:80"
     volumes:
-      - ../ruoyi-fastapi-frontend/bin/nginx.dockermy.conf:/etc/nginx/conf.d/default.conf
+      - ../nginx/html/dist:/usr/share/nginx/html:ro
     depends_on:
       - ruoyi-backend-my
     networks:
