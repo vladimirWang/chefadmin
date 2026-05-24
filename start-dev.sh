@@ -1,14 +1,38 @@
 #!/usr/bin/env bash
-# 本地开发：同时启动 admin 后端与前端（与 README 默认方式一致）
-# 后端: ruoyi app run --env=dev  →  app.py + uvicorn
-# 前端: npm run dev              →  Vite (http://localhost:80)
+# 本地开发：启动 admin 后端（uv .venv + ruoyi）与前端
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKEND_DIR="${ROOT_DIR}/ruoyi-fastapi-backend"
 FRONTEND_DIR="${ROOT_DIR}/ruoyi-fastapi-frontend"
+VENV_DIR="${BACKEND_DIR}/.venv"
+RUOYI_BIN="${VENV_DIR}/bin/ruoyi"
 
 BACKEND_PID=""
+START_FRONTEND=1
+
+usage() {
+  echo "用法: $0 [--backend-only]" >&2
+  echo "  默认同时启动后端与前端；--backend-only 仅启动后端 API。" >&2
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --backend-only|-b)
+      START_FRONTEND=0
+      shift
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      echo "未知参数: $1" >&2
+      usage
+      exit 1
+      ;;
+  esac
+done
 
 cleanup() {
   if [[ -n "${BACKEND_PID}" ]] && kill -0 "${BACKEND_PID}" 2>/dev/null; then
@@ -20,15 +44,8 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
-activate_backend_venv() {
-  if [[ -f "${BACKEND_DIR}/.venv/bin/activate" ]]; then
-    # shellcheck disable=SC1091
-    source "${BACKEND_DIR}/.venv/bin/activate"
-  fi
-}
-
-if [[ ! -d "${BACKEND_DIR}" || ! -d "${FRONTEND_DIR}" ]]; then
-  echo "请在 private_chef_admin 根目录运行本脚本。" >&2
+if [[ ! -d "${BACKEND_DIR}" ]]; then
+  echo "缺少后端目录: ${BACKEND_DIR}" >&2
   exit 1
 fi
 
@@ -37,42 +54,52 @@ if [[ ! -f "${BACKEND_DIR}/.env.dev" ]]; then
   exit 1
 fi
 
-if [[ ! -d "${FRONTEND_DIR}/node_modules" ]]; then
-  echo "未找到前端依赖，请先执行:" >&2
-  echo "  cd ruoyi-fastapi-frontend && npm install" >&2
+if [[ ! -x "${RUOYI_BIN}" ]]; then
+  echo "未找到 ${RUOYI_BIN}" >&2
+  echo "请先用 uv 安装后端依赖:" >&2
+  echo "  cd ruoyi-fastapi-backend" >&2
+  echo "  uv venv && source .venv/bin/activate" >&2
+  echo "  UV_DEFAULT_INDEX=https://pypi.org/simple uv pip install -r requirements.txt" >&2
   exit 1
 fi
 
-activate_backend_venv
-if ! command -v ruoyi >/dev/null 2>&1; then
-  echo "未找到 ruoyi 命令。请在后端目录安装依赖:" >&2
-  echo "  cd ruoyi-fastapi-backend && pip3 install -r requirements.txt" >&2
+if [[ "${START_FRONTEND}" -eq 1 && ! -d "${FRONTEND_DIR}/node_modules" ]]; then
+  echo "未找到前端依赖，请先执行其一:" >&2
+  echo "  cd ruoyi-fastapi-frontend && pnpm install" >&2
+  echo "  cd ruoyi-fastapi-frontend && npm install" >&2
   exit 1
 fi
 
 run_backend() {
   cd "${BACKEND_DIR}"
-  activate_backend_venv
-  exec ruoyi app run --env=dev
+  exec "${RUOYI_BIN}" app run --env=dev
 }
 
 run_frontend() {
   cd "${FRONTEND_DIR}"
-  if [[ -f yarn.lock ]] && command -v yarn >/dev/null 2>&1; then
+  if [[ -f pnpm-lock.yaml ]] && command -v pnpm >/dev/null 2>&1; then
+    pnpm run dev
+  elif [[ -f yarn.lock ]] && command -v yarn >/dev/null 2>&1; then
     yarn dev
   else
     npm run dev
   fi
 }
 
-echo "后端: ruoyi app run --env=dev  →  http://127.0.0.1:9099"
-echo "前端: npm run dev              →  http://localhost:80"
+echo "后端: ${RUOYI_BIN} app run --env=dev  →  http://127.0.0.1:9099"
+if [[ "${START_FRONTEND}" -eq 1 ]]; then
+  echo "前端: pnpm/npm run dev            →  http://localhost:80"
+fi
 echo "默认账号: admin / admin123"
-echo "按 Ctrl+C 停止前后端"
+echo "按 Ctrl+C 停止"
 echo ""
 
 run_backend &
 BACKEND_PID=$!
 
-sleep 1
-run_frontend
+if [[ "${START_FRONTEND}" -eq 1 ]]; then
+  sleep 1
+  run_frontend
+else
+  wait "${BACKEND_PID}"
+fi
