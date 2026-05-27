@@ -47,10 +47,6 @@ pg = [
     "asyncpg==0.31.0",
     "psycopg2==2.9.11",
 ]
-mysql = [
-    "asyncmy==0.2.11",
-    "PyMySQL==1.1.2",
-]
 
 [project.scripts]
 ruoyi = "cli.main:main"
@@ -60,3 +56,13 @@ include = ["cli*"]
 
 [tool.uv]
 package = true
+
+# 配置双索引源：优先清华镜像源，其次官方 PyPI
+[[tool.uv.index]]
+url = "https://pypi.tuna.tsinghua.edu.cn/simple"
+name = "tsinghua"
+default = true
+
+[[tool.uv.index]]
+url = "https://pypi.org/simple"
+name = "pypi"
