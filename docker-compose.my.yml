@@ -9,8 +9,10 @@ services:
     container_name: ruoyi-frontend
     ports:
       - "6443:80"
+      - "6444:443"
     volumes:
       - ./nginx/html/dist:/usr/share/nginx/html:ro
+      - ./nginx/ssl:/etc/ssl/cert:ro
     depends_on:
       - ruoyi-backend-my
     networks:

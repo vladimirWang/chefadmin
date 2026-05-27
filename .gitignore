@@ -157,4 +157,5 @@ ruoyi-fastapi-backend/.env.dev
 ruoyi-fastapi-frontend/.env.prod
 
 nginx/html
-nginx/ssl
+nginx/ssl/*
+!nginx/ssl/README.md
