@@ -33,25 +33,25 @@ services:
     networks:
       - ruoyi-network
 
-  # PostgreSQL服务
-  ruoyi-pg:
-    image: postgres:14
-    container_name: ruoyi-pg
-    environment:
-      POSTGRES_PASSWORD: root
-      POSTGRES_DB: ruoyi-fastapi
-      POSTGRES_INITDB_ARGS: --encoding=UTF8 --lc-collate=C --lc-ctype=C
-    ports:
-      - "15432:5432"
-    volumes:
-      - ./ruoyi-fastapi-backend/sql/ruoyi-fastapi-pg.sql:/docker-entrypoint-initdb.d/ruoyi-fastapi-pg.sql
-    networks:
-      - ruoyi-network
-    healthcheck:
-      test: ["CMD", "pg_isready", "-U", "postgres"]
-      interval: 5s
-      timeout: 10s
-      retries: 30
+  # # PostgreSQL服务
+  # ruoyi-pg:
+  #   image: postgres:14
+  #   container_name: ruoyi-pg
+  #   environment:
+  #     POSTGRES_PASSWORD: root
+  #     POSTGRES_DB: ruoyi-fastapi
+  #     POSTGRES_INITDB_ARGS: --encoding=UTF8 --lc-collate=C --lc-ctype=C
+  #   ports:
+  #     - "15432:5432"
+  #   volumes:
+  #     - ./ruoyi-fastapi-backend/sql/ruoyi-fastapi-pg.sql:/docker-entrypoint-initdb.d/ruoyi-fastapi-pg.sql
+  #   networks:
+  #     - ruoyi-network
+  #   healthcheck:
+  #     test: ["CMD", "pg_isready", "-U", "postgres"]
+  #     interval: 5s
+  #     timeout: 10s
+  #     retries: 30
 
   # Redis服务
   ruoyi-redis:
