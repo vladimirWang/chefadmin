@@ -7,7 +7,7 @@ cd "$SCRIPT_DIR"
 # 默认 PostgreSQL 栈；MySQL 可设 COMPOSE_FILE=docker-compose.my.yml
 COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.pg.yml}"
 DIST_DIR="${SCRIPT_DIR}/nginx/html/dist"
-SSL_DIR="${SCRIPT_DIR}/nginx/ssl"
+SSL_DIR="${SCRIPT_DIR}/nginx/ssl/cert"
 SSL_CERT="${SSL_DIR}/chefadmin.hetou.vip.pem"
 SSL_KEY="${SSL_DIR}/chefadmin.hetou.vip.key"
 
