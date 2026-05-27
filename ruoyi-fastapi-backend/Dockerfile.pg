@@ -7,17 +7,13 @@ ENV UV_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
 COPY --from=ghcr.io/astral-sh/uv:0.11.7 /uv /usr/local/bin/uv
 
 COPY pyproject.toml uv.lock ./
-RUN uv sync --frozen --no-dev
+RUN uv sync --frozen --no-dev --extra pg
 
 # 复制源代码
 COPY . .
-
-# 安装依赖
-# RUN pip install --no-cache-dir -r requirements-pg.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 
 # 暴露端口
 EXPOSE 9099
 
 # 启动命令
-# CMD ["ruoyi", "app", "run", "--env=dockerpg"]
 CMD ["uv", "run", "--no-sync", "ruoyi", "app", "run", "--env=dockerpg"]
