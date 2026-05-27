@@ -8,8 +8,8 @@ cd "$SCRIPT_DIR"
 COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.pg.yml}"
 DIST_DIR="${SCRIPT_DIR}/nginx/html/dist"
 SSL_DIR="${SCRIPT_DIR}/nginx/ssl"
-SSL_CERT="${SSL_DIR}/admin.hetou.vip.pem"
-SSL_KEY="${SSL_DIR}/admin.hetou.vip.key"
+SSL_CERT="${SSL_DIR}/chefadmin.hetou.vip.pem"
+SSL_KEY="${SSL_DIR}/chefadmin.hetou.vip.key"
 
 if [[ ! -f "${COMPOSE_FILE}" ]]; then
   echo "缺少 compose 文件: ${COMPOSE_FILE}" >&2
