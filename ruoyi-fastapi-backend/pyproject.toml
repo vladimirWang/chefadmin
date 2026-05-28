@@ -46,7 +46,3 @@ package = true
 url = "https://pypi.tuna.tsinghua.edu.cn/simple"
 name = "tsinghua"
 default = true
-
-[[tool.uv.index]]
-url = "https://pypi.org/simple"
-name = "pypi"
