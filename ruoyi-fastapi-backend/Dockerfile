@@ -1,7 +1,8 @@
 FROM python:3.10
 WORKDIR /app
 
-# ENV UV_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
+# 配置清华镜像源
+ENV UV_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
 
 # 安装 uv（与本地一样用 lock 文件）
 COPY --from=ghcr.io/astral-sh/uv:0.11.7 /uv /usr/local/bin/uv
