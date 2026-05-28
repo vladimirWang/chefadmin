@@ -12,6 +12,9 @@ RUN uv sync --frozen --no-dev
 # 复制源代码
 COPY . .
 
+# 安装项目本身（包括 cli 模块）
+RUN uv pip install -e .
+
 # 暴露端口
 EXPOSE 9099
 

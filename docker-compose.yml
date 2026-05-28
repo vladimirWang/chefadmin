@@ -22,7 +22,7 @@ services:
   ruoyi-backend-pg:
     build:
       context: ./ruoyi-fastapi-backend
-      dockerfile: Dockerfile.pg
+      dockerfile: Dockerfile
     image: ruoyi-backend-pg:latest
     container_name: ruoyi-backend-pg
     ports:

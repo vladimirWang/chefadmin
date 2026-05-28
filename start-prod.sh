@@ -5,7 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR"
 
 # 勿用 COMPOSE_FILE：与 Docker Compose 内置环境变量同名，服务器若已 export 会覆盖默认值
-RUOYI_COMPOSE_FILE="${RUOYI_COMPOSE_FILE:-docker-compose.pg.yml}"
+RUOYI_COMPOSE_FILE="${RUOYI_COMPOSE_FILE:-docker-compose.yml}"
 DIST_DIR="${SCRIPT_DIR}/nginx/html/dist"
 SSL_DIR="${SCRIPT_DIR}/nginx/ssl/cert"
 SSL_CERT="${SSL_DIR}/chefadmin.hetou.vip.pem"
@@ -13,7 +13,6 @@ SSL_KEY="${SSL_DIR}/chefadmin.hetou.vip.key"
 
 if [[ ! -f "${RUOYI_COMPOSE_FILE}" ]]; then
   echo "缺少 compose 文件: ${RUOYI_COMPOSE_FILE}" >&2
-  echo "可选: docker-compose.pg.yml / docker-compose.my.yml" >&2
   exit 1
 fi
 
