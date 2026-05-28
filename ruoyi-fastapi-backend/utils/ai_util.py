@@ -29,7 +29,6 @@ _PROVIDER_REGISTRY: dict[str, tuple[str, str]] = {
     'LlamaCpp': ('agno.models.llama_cpp', 'LlamaCpp'),
     'LMStudio': ('agno.models.lmstudio', 'LMStudio'),
     'Meta': ('agno.models.meta', 'Llama'),
-    'Mistral': ('agno.models.mistral', 'MistralChat'),
     'N1N': ('agno.models.n1n', 'N1N'),
     'Nebius': ('agno.models.nebius', 'Nebius'),
     'Nexus': ('agno.models.nexus', 'Nexus'),
