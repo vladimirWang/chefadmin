@@ -20,4 +20,4 @@ RUN uv pip install -e .
 EXPOSE 9099
 
 # 启动命令
-CMD ["uv", "run", "--no-sync", "ruoyi", "app", "run", "--env=dockerpg"]
+CMD ["uv", "run", "--no-sync", "ruoyi", "app", "run", "--env=prod"]

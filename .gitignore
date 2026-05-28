@@ -154,6 +154,7 @@ cython_debug/
 .trae/
 
 ruoyi-fastapi-backend/.env.dev
+ruoyi-fastapi-backend/.env.prod
 ruoyi-fastapi-frontend/.env.prod
 
 nginx/html
