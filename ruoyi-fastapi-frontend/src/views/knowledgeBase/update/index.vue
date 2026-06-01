@@ -68,7 +68,7 @@ function resetUpload() {
 }
 
 function goList() {
-  router.push('/knowledgeBase/list')
+  router.push('/knowledge_base/list')
 }
 
 async function submitUpload() {
@@ -93,7 +93,7 @@ async function submitUpload() {
     if (data.code === 200) {
       proxy.$modal.msgSuccess(data.msg || '上传成功')
       resetUpload()
-      router.push('/knowledgeBase/list')
+      router.push('/knowledge_base/list')
     } else {
       proxy.$modal.msgError(data.msg || '上传失败')
     }

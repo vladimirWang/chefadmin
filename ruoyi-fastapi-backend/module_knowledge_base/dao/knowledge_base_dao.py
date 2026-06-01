@@ -88,5 +88,11 @@ class KnowledgeBaseDao:
         )
 
     @classmethod
+    async def get_knowledge_by_id(cls, db: AsyncSession, knowledge_id: int) -> KnowledgeBase | None:
+        return (
+            await db.execute(select(KnowledgeBase).where(KnowledgeBase.id == knowledge_id))
+        ).scalars().first()
+
+    @classmethod
     async def delete_knowledge_base_dao(cls, db: AsyncSession, knowledge_id: int) -> None:
         await db.execute(delete(KnowledgeBase).where(KnowledgeBase.id == knowledge_id))

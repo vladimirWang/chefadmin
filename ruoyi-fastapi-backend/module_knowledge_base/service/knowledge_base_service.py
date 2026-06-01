@@ -15,7 +15,8 @@ from module_knowledge_base.entity.vo.knowledge_base_vo import (
     KnowledgeBasePageQueryModel,
     UpdateKnowledgeBaseModel,
 )
-from utils.reader import read_filepath_bytes_sync
+from module_knowledge_base.service.knowledge_vector_service import KnowledgeVectorService
+from utils.reader import basename_from_filepath, read_filepath_bytes_sync
 from utils.upload_util import UploadUtil
 
 
@@ -74,8 +75,11 @@ class KnowledgeBaseService:
                 md5_value=md5_value,
                 create_by=create_by,
             )
+            vector_message = await KnowledgeVectorService.index_file_content(
+                content, file.filename, create_by
+            )
             await query_db.commit()
-            return CrudResponseModel(is_success=True, message='上传成功')
+            return CrudResponseModel(is_success=True, message=f'上传成功；{vector_message}')
         except Exception as e:
             await query_db.rollback()
             if os.path.exists(stored_path):
@@ -95,12 +99,14 @@ class KnowledgeBaseService:
         if await KnowledgeBaseDao.check_knowledge_existed(query_db, md5_value):
             return CrudResponseModel(is_success=True, message='文件已存在')
 
+        filename = basename_from_filepath(filepath)
         try:
             await KnowledgeBaseDao.add_knowledge_from_bytes(
                 query_db, filepath, md5_value, raw, create_by=create_by
             )
+            vector_message = await KnowledgeVectorService.index_file_content(raw, filename, create_by)
             await query_db.commit()
-            return CrudResponseModel(is_success=True, message='更新成功')
+            return CrudResponseModel(is_success=True, message=f'更新成功；{vector_message}')
         except Exception as e:
             await query_db.rollback()
             raise e
@@ -113,10 +119,19 @@ class KnowledgeBaseService:
             raise ServiceException(message='传入文件 id 为空')
 
         try:
+            removed_total = 0
             for knowledge_id in page_object.ids.split(','):
-                await KnowledgeBaseDao.delete_knowledge_base_dao(query_db, int(knowledge_id))
+                kid = int(knowledge_id)
+                record = await KnowledgeBaseDao.get_knowledge_by_id(query_db, kid)
+                if record is None:
+                    continue
+                removed_total += await KnowledgeVectorService.delete_by_filename(record.filename)
+                await KnowledgeBaseDao.delete_knowledge_base_dao(query_db, kid)
             await query_db.commit()
-            return CrudResponseModel(is_success=True, message='删除成功')
+            message = '删除成功'
+            if removed_total:
+                message = f'删除成功；已清理 {removed_total} 条向量'
+            return CrudResponseModel(is_success=True, message=message)
         except Exception as e:
             await query_db.rollback()
             raise e

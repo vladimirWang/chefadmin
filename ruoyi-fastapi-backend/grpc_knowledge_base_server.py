@@ -12,7 +12,8 @@ import grpc
 from config.database import AsyncSessionLocal
 from grpc_generated import knowledge_base_pb2, knowledge_base_pb2_grpc
 from module_knowledge_base.dao.knowledge_base_dao import KnowledgeBaseDao
-from utils.reader import read_filepath_bytes_sync
+from module_knowledge_base.service.knowledge_vector_service import KnowledgeVectorService
+from utils.reader import basename_from_filepath, read_filepath_bytes_sync
 
 logger = logging.getLogger('ruoyi.knowledge_base.grpc')
 
@@ -26,10 +27,11 @@ async def _update_knowledge_base(filepath: str) -> str:
             if await KnowledgeBaseDao.check_knowledge_existed(db, md5_value):
                 return '文件已存在'
 
-            message = await KnowledgeBaseDao.add_knowledge_from_bytes(db, filepath, md5_value, raw)
+            filename = basename_from_filepath(filepath)
+            await KnowledgeBaseDao.add_knowledge_from_bytes(db, filepath, md5_value, raw)
+            vector_message = await KnowledgeVectorService.index_file_content(raw, filename)
             await db.commit()
-            filename = message.filename
-            return f'success: {filename}'
+            return f'success: {filename}；{vector_message}'
         except Exception:
             await db.rollback()
             raise
