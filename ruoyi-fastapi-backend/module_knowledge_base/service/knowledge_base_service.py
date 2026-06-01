@@ -1,0 +1,122 @@
+import hashlib
+import os
+from datetime import datetime
+from typing import Any
+
+from fastapi import Request, UploadFile
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from common.vo import CrudResponseModel, PageModel
+from config.env import UploadConfig
+from exceptions.exception import ServiceException
+from module_knowledge_base.dao.knowledge_base_dao import KnowledgeBaseDao
+from module_knowledge_base.entity.vo.knowledge_base_vo import (
+    DeleteKnowledgeBaseModel,
+    KnowledgeBasePageQueryModel,
+    UpdateKnowledgeBaseModel,
+)
+from utils.reader import read_filepath_bytes_sync
+from utils.upload_util import UploadUtil
+
+
+class KnowledgeBaseService:
+    @classmethod
+    async def get_knowledge_list_services(
+        cls, query_db: AsyncSession, query_object: KnowledgeBasePageQueryModel, is_page: bool = True
+    ) -> PageModel | list[dict[str, Any]]:
+        return await KnowledgeBaseDao.get_knowledge_list(query_db, query_object, is_page)
+
+    @classmethod
+    async def upload_knowledge_services(
+        cls, query_db: AsyncSession, request: Request, file: UploadFile, create_by: str
+    ) -> CrudResponseModel:
+        if not file.filename:
+            raise ServiceException(message='请选择要上传的文件')
+        if not UploadUtil.check_file_extension(file):
+            raise ServiceException(message='文件类型不合法')
+
+        content = await file.read()
+        if not content:
+            raise ServiceException(message='文件内容为空')
+
+        md5_value = hashlib.md5(content).hexdigest()
+        if await KnowledgeBaseDao.check_knowledge_existed(query_db, md5_value):
+            raise ServiceException(message='文件已存在，请勿重复上传')
+
+        relative_path = (
+            f'knowledge/{datetime.now().strftime("%Y")}/{datetime.now().strftime("%m")}/{datetime.now().strftime("%d")}'
+        )
+        dir_path = os.path.join(UploadConfig.UPLOAD_PATH, relative_path)
+        os.makedirs(dir_path, exist_ok=True)
+
+        original_name = file.filename.rsplit('.', 1)[0]
+        extension = file.filename.rsplit('.', 1)[-1]
+        stored_name = (
+            f'{original_name}_{datetime.now().strftime("%Y%m%d%H%M%S")}'
+            f'{UploadConfig.UPLOAD_MACHINE}{UploadUtil.generate_random_number()}.{extension}'
+        )
+        stored_path = os.path.join(dir_path, stored_name)
+        with open(stored_path, 'wb') as f:
+            f.write(content)
+
+        filepath = (
+            f'{request.base_url}{UploadConfig.UPLOAD_PREFIX[1:]}/{relative_path}/{stored_name}'.rstrip('/')
+        )
+        filetype = extension[:10]
+
+        try:
+            await KnowledgeBaseDao.add_knowledge_base_dao(
+                query_db,
+                filename=file.filename,
+                filepath=filepath,
+                filetype=filetype,
+                filesize=len(content),
+                md5_value=md5_value,
+                create_by=create_by,
+            )
+            await query_db.commit()
+            return CrudResponseModel(is_success=True, message='上传成功')
+        except Exception as e:
+            await query_db.rollback()
+            if os.path.exists(stored_path):
+                os.remove(stored_path)
+            raise e
+
+    @classmethod
+    async def update_knowledge_by_filepath_services(
+        cls, query_db: AsyncSession, page_object: UpdateKnowledgeBaseModel, create_by: str
+    ) -> CrudResponseModel:
+        filepath = (page_object.filepath or '').strip()
+        if not filepath:
+            raise ServiceException(message='filepath 不能为空')
+
+        raw = read_filepath_bytes_sync(filepath)
+        md5_value = hashlib.md5(raw).hexdigest()
+        if await KnowledgeBaseDao.check_knowledge_existed(query_db, md5_value):
+            return CrudResponseModel(is_success=True, message='文件已存在')
+
+        try:
+            await KnowledgeBaseDao.add_knowledge_from_bytes(
+                query_db, filepath, md5_value, raw, create_by=create_by
+            )
+            await query_db.commit()
+            return CrudResponseModel(is_success=True, message='更新成功')
+        except Exception as e:
+            await query_db.rollback()
+            raise e
+
+    @classmethod
+    async def delete_knowledge_services(
+        cls, query_db: AsyncSession, page_object: DeleteKnowledgeBaseModel
+    ) -> CrudResponseModel:
+        if not page_object.ids:
+            raise ServiceException(message='传入文件 id 为空')
+
+        try:
+            for knowledge_id in page_object.ids.split(','):
+                await KnowledgeBaseDao.delete_knowledge_base_dao(query_db, int(knowledge_id))
+            await query_db.commit()
+            return CrudResponseModel(is_success=True, message='删除成功')
+        except Exception as e:
+            await query_db.rollback()
+            raise e

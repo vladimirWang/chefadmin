@@ -3,7 +3,6 @@
 import grpc
 import warnings
 
-from . import knowledge_base_pb2 as knowledge__base__pb2
 
 GRPC_GENERATED_VERSION = '1.81.0'
 GRPC_VERSION = grpc.__version__
@@ -34,31 +33,14 @@ class KnowledgeServiceStub:
         Args:
             channel: A grpc.Channel.
         """
-        self.Update = channel.unary_unary(
-                '/chefadmin.KnowledgeService/Update',
-                request_serializer=knowledge__base__pb2.UpdateKnowledgeReq.SerializeToString,
-                response_deserializer=knowledge__base__pb2.UpdateKnowledgeResp.FromString,
-                _registered_method=True)
 
 
 class KnowledgeServiceServicer:
     """Missing associated documentation comment in .proto file."""
 
-    def Update(self, request, context):
-        """更新知识库
-        """
-        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-        context.set_details('Method not implemented!')
-        raise NotImplementedError('Method not implemented!')
-
 
 def add_KnowledgeServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
-            'Update': grpc.unary_unary_rpc_method_handler(
-                    servicer.Update,
-                    request_deserializer=knowledge__base__pb2.UpdateKnowledgeReq.FromString,
-                    response_serializer=knowledge__base__pb2.UpdateKnowledgeResp.SerializeToString,
-            ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
             'chefadmin.KnowledgeService', rpc_method_handlers)
@@ -69,30 +51,3 @@ def add_KnowledgeServiceServicer_to_server(servicer, server):
  # This class is part of an EXPERIMENTAL API.
 class KnowledgeService:
     """Missing associated documentation comment in .proto file."""
-
-    @staticmethod
-    def Update(request,
-            target,
-            options=(),
-            channel_credentials=None,
-            call_credentials=None,
-            insecure=False,
-            compression=None,
-            wait_for_ready=None,
-            timeout=None,
-            metadata=None):
-        return grpc.experimental.unary_unary(
-            request,
-            target,
-            '/chefadmin.KnowledgeService/Update',
-            knowledge__base__pb2.UpdateKnowledgeReq.SerializeToString,
-            knowledge__base__pb2.UpdateKnowledgeResp.FromString,
-            options,
-            channel_credentials,
-            insecure,
-            call_credentials,
-            compression,
-            wait_for_ready,
-            timeout,
-            metadata,
-            _registered_method=True)

@@ -24,17 +24,13 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x14knowledge_base.proto\x12\tchefadmin\"&\n\x12UpdateKnowledgeReq\x12\x10\n\x08\x66ilepath\x18\x01 \x01(\t\"&\n\x13UpdateKnowledgeResp\x12\x0f\n\x07message\x18\x01 \x01(\t2[\n\x10KnowledgeService\x12G\n\x06Update\x12\x1d.chefadmin.UpdateKnowledgeReq\x1a\x1e.chefadmin.UpdateKnowledgeRespb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x14knowledge_base.proto\x12\tchefadmin2\x12\n\x10KnowledgeServiceb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'knowledge_base_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
-  _globals['_UPDATEKNOWLEDGEREQ']._serialized_start=35
-  _globals['_UPDATEKNOWLEDGEREQ']._serialized_end=73
-  _globals['_UPDATEKNOWLEDGERESP']._serialized_start=75
-  _globals['_UPDATEKNOWLEDGERESP']._serialized_end=113
-  _globals['_KNOWLEDGESERVICE']._serialized_start=115
-  _globals['_KNOWLEDGESERVICE']._serialized_end=206
+  _globals['_KNOWLEDGESERVICE']._serialized_start=35
+  _globals['_KNOWLEDGESERVICE']._serialized_end=53
 # @@protoc_insertion_point(module_scope)

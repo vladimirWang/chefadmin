@@ -157,6 +157,20 @@ export const dynamicRoutes = [
         meta: { title: '修改生成配置', activeMenu: '/tool/gen' }
       }
     ]
+  },
+  {
+    path: '/knowledgeBase/update',
+    component: Layout,
+    hidden: true,
+    permissions: ['knowledgeBase:upload'],
+    children: [
+      {
+        path: 'index',
+        component: () => import('@/views/knowledgeBase/update/index'),
+        name: 'KnowledgeBaseUpdate',
+        meta: { title: '上传知识库文件', activeMenu: '/knowledgeBase/list' }
+      }
+    ]
   }
 ]
 

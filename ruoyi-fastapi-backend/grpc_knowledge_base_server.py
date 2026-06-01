@@ -11,7 +11,7 @@ import grpc
 
 from config.database import AsyncSessionLocal
 from grpc_generated import knowledge_base_pb2, knowledge_base_pb2_grpc
-from module_knowledge_base.dao.update_dao import UpdateDao
+from module_knowledge_base.dao.knowledge_base_dao import KnowledgeBaseDao
 from utils.reader import read_filepath_bytes_sync
 
 logger = logging.getLogger('ruoyi.knowledge_base.grpc')
@@ -23,33 +23,20 @@ async def _update_knowledge_base(filepath: str) -> str:
 
     async with AsyncSessionLocal() as db:
         try:
-            if await UpdateDao.check_knowledge_existed(db, md5_value):
+            if await KnowledgeBaseDao.check_knowledge_existed(db, md5_value):
                 return '文件已存在'
 
-            message = await UpdateDao.update_knowledge_base_dao(db, filepath, md5_value, raw)
+            message = await KnowledgeBaseDao.add_knowledge_from_bytes(db, filepath, md5_value, raw)
             await db.commit()
-            return message
+            filename = message.filename
+            return f'success: {filename}'
         except Exception:
             await db.rollback()
             raise
 
 
 class KnowledgeBaseServicer(knowledge_base_pb2_grpc.KnowledgeServiceServicer):
-    def Update(self, request, context):
-        filepath = (request.filepath or '').strip()
-        logger.info('-----Received UpdateKnowledge request with filepath: %s', filepath)
-        if not filepath:
-            context.abort(grpc.StatusCode.INVALID_ARGUMENT, 'filepath 不能为空')
-
-        try:
-            message = asyncio.run(_update_knowledge_base(filepath))
-            logger.info('UpdateKnowledge result: %s', message)
-            return knowledge_base_pb2.UpdateKnowledgeResp(message=message)
-        except grpc.RpcError:
-            raise
-        except Exception:
-            logger.exception('Failed to update knowledge from filepath: %s', filepath)
-            context.abort(grpc.StatusCode.INTERNAL, '更新知识库失败')
+    pass
 
 
 def _build_knowledge_base_server() -> tuple[grpc.Server, str]:
