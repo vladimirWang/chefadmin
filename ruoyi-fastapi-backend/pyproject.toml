@@ -29,6 +29,8 @@ dependencies = [
     "user-agents==2.2.0",
     "psycopg[binary,async]>=3.2.0",
     "pillow>=12.2.0",
+    "grpcio-tools>=1.81.0",
+    "grpcio>=1.81.0",
 ]
 
 [project.scripts]
@@ -40,13 +42,13 @@ url = "https://pypi.tuna.tsinghua.edu.cn/simple"
 name = "tsinghua"
 default = true
 
+[tool.setuptools.packages.find]
+include = ["cli*"]
+
 [[tool.uv.index]]
 url = "https://pypi.org/simple"
 name = "pypi"
 default = false
-
-[tool.setuptools.packages.find]
-include = ["cli*"]
 
 [tool.uv]
 package = true

@@ -1,4 +1,5 @@
 import asyncio
+import os
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
@@ -57,6 +58,11 @@ async def _stop_background_tasks(app: FastAPI) -> None:
     await close_async_engine()
 
 
+def _knowledge_base_grpc_disabled() -> bool:
+    v = os.environ.get('DISABLE_KNOWLEDGE_BASE_GRPC', '').strip().lower()
+    return v in ('1', 'true', 'yes', 'on')
+
+
 # 生命周期事件
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
@@ -86,6 +92,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             on_lock_lost=SchedulerUtil.on_lock_lost,
         )
 
+    grpc_server = None
     with logger.contextualize(startup_phase=True, startup_log_enabled=startup_log_enabled):
         logger.info(f'⏰️ {AppConfig.app_name}开始启动')
         if startup_log_enabled:
@@ -96,6 +103,19 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         await RedisUtil.init_sys_dict(app.state.redis)
         await RedisUtil.init_sys_config(app.state.redis)
         await _start_background_tasks(app)
+
+        if not _knowledge_base_grpc_disabled():
+            try:
+                from grpc_knowledge_base_server import start_knowledge_base_grpc_in_thread
+
+                grpc_server = start_knowledge_base_grpc_in_thread()
+            except Exception:
+                logger.exception(
+                    'KnowledgeBase gRPC 启动失败（常见原因: 端口被占用）。'
+                    '可设 DISABLE_KNOWLEDGE_BASE_GRPC=1 仅起 HTTP，'
+                    '或单独运行 python grpc_knowledge_base_server.py'
+                )
+                raise
 
     if startup_log_enabled:
         # 短暂等待确保下面的启动日志在最后打印
@@ -130,6 +150,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     yield
     shutdown_log_enabled = getattr(app.state, 'startup_log_enabled', False)
     with logger.contextualize(startup_phase=True, startup_log_enabled=shutdown_log_enabled):
+        if grpc_server is not None:
+            grpc_server.stop(grace=5)
         await _stop_background_tasks(app)
 
 

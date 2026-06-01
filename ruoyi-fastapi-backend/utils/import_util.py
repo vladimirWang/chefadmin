@@ -71,6 +71,8 @@ class ImportUtil:
         # 排除目录扩展
         exclude_dirs = {
             'venv',
+            '.venv',
+            'site-packages',
             '.env',
             '.git',
             '__pycache__',
@@ -81,6 +83,8 @@ class ImportUtil:
             'docs',
             'examples',
             'scripts',
+            'node_modules',
+            '.uv',
         }
 
         for root, dirs, files in os.walk(project_root):

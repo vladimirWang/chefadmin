@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package chefadmin;
+
+message UpdateKnowledgeReq {
+  string filepath = 1;
+}
+
+message UpdateKnowledgeResp {
+  string message = 1;
+}
+
+service KnowledgeService {
+  // 更新知识库
+  rpc Update (UpdateKnowledgeReq) returns (UpdateKnowledgeResp);
+}
