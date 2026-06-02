@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import BigInteger, Column, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import BigInteger, Column, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
 from sqlalchemy.orm import relationship
 
@@ -23,6 +23,7 @@ class AppUser(Base):
 
     dishes = relationship('AppDish', back_populates='user')
     chat_messages = relationship('AppAgentChatMessage', back_populates='user')
+    dish_footprints = relationship('AppDishFootprint', back_populates='user')
 
 
 class AppDish(Base):
@@ -42,6 +43,25 @@ class AppDish(Base):
     deleted_at = Column(DateTime, nullable=True, comment='删除时间')
 
     user = relationship('AppUser', back_populates='dishes')
+    footprints = relationship('AppDishFootprint', back_populates='dish')
+
+
+class AppDishFootprint(Base):
+    """用户浏览菜品足迹（LRU 上限由业务层控制）"""
+
+    __tablename__ = 'dish_footprint'
+    __table_args__ = (
+        UniqueConstraint('user_id', 'dish_id', name='dish_footprint_user_id_dish_id_key'),
+        {'comment': '用户浏览菜品足迹'},
+    )
+
+    id = Column(Integer, primary_key=True, nullable=False, autoincrement=True, comment='足迹ID')
+    user_id = Column(Integer, ForeignKey('user.id', ondelete='CASCADE'), nullable=False, comment='用户ID')
+    dish_id = Column(Integer, ForeignKey('dish.id', ondelete='CASCADE'), nullable=False, comment='菜品ID')
+    viewed_at = Column(DateTime, nullable=False, default=datetime.now, comment='最近浏览时间')
+
+    user = relationship('AppUser', back_populates='dish_footprints')
+    dish = relationship('AppDish', back_populates='footprints')
 
 
 class AppChatSession(Base):
