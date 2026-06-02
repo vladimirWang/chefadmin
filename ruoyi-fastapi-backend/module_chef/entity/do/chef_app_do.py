@@ -17,6 +17,9 @@ class AppUser(Base):
     email = Column(String(255), nullable=False, unique=True, comment='邮箱')
     password = Column(String(255), nullable=False, comment='密码')
     salt = Column(String(255), nullable=False, comment='密码盐')
+    avatar_url = Column(String(512), nullable=True, comment='头像URL')
+    nickname = Column(String(32), nullable=True, comment='昵称')
+    like_count = Column(Integer, nullable=False, default=0, comment='获赞总数')
 
     dishes = relationship('AppDish', back_populates='user')
     chat_messages = relationship('AppAgentChatMessage', back_populates='user')
@@ -33,6 +36,7 @@ class AppDish(Base):
     image_url = Column(ARRAY(Text), nullable=False, comment='图片URL列表')
     title = Column(String(255), nullable=True, comment='标题')
     content = Column(Text, nullable=False, comment='内容')
+    like_count = Column(Integer, nullable=False, default=0, comment='点赞数')
     created_at = Column(DateTime, nullable=False, default=datetime.now, comment='创建时间')
     updated_at = Column(DateTime, nullable=False, default=datetime.now, onupdate=datetime.now, comment='更新时间')
     deleted_at = Column(DateTime, nullable=True, comment='删除时间')

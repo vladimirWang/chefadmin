@@ -14,6 +14,7 @@ class DishModel(BaseModel):
     image_url: list[str] = Field(default_factory=list, description='封面图URL列表')
     title: str | None = Field(default=None, description='标题')
     content: str | None = Field(default=None, description='正文')
+    like_count: int | None = Field(default=0, description='点赞数')
     created_at: datetime | None = Field(default=None, description='创建时间')
     updated_at: datetime | None = Field(default=None, description='更新时间')
     deleted_at: datetime | None = Field(default=None, description='删除时间')
