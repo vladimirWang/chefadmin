@@ -38,7 +38,7 @@ services:
 
   # PostgreSQL服务
   ruoyi-pg:
-    image: postgres:14
+    image: pgvector/pgvector:pg14
     container_name: ruoyi-pg-test
     environment:
       POSTGRES_PASSWORD: root
