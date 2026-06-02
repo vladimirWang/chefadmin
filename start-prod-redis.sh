@@ -11,6 +11,9 @@ if [[ ! -f "${RUOYI_COMPOSE_FILE}" ]]; then
   exit 1
 fi
 
+docker network inspect private_chef_network >/dev/null 2>&1 \
+  || docker network create private_chef_network
+
 echo "启动 ruoyi-redis（项目: chef-ruoyi-prod）..."
 docker compose -f "${RUOYI_COMPOSE_FILE}" -p chef-ruoyi-prod up -d ruoyi-redis
 
