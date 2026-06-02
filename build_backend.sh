@@ -1,35 +1,62 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Mac 本地：build_image → build_save → 上传 tar.gz → 远程 compose_only
+#
+# 用法：
+#   ./build_backend.sh           # 构建 + 导出 + 部署（默认）
+#   ./build_backend.sh build     # 仅构建并导出 tar.gz
+#   ./build_backend.sh deploy    # 仅上传已有 tar.gz 并在服务器 load + 启动
+#
+# 环境变量：
+#   REMOTE_USER_HOST  默认 root@139.224.68.145
+#   REMOTE_DIR        默认 ~/private_chef_admin
+#   NO_CACHE=1        传给 build_image.sh，无缓存构建
+
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-PLATFORM="${PLATFORM:-linux/amd64}"
-PYTHON_BASE="${PYTHON_BASE:-python:3.10}"
+cd "$SCRIPT_DIR"
 
-# 国内网络可二选一：
-# 1) Docker Desktop → Settings → Docker Engine 配置 registry-mirrors
-# 2) export PYTHON_BASE=docker.m.daocloud.io/library/python:3.10
+REMOTE_USER_HOST="${REMOTE_USER_HOST:-root@139.224.68.145}"
+REMOTE_DIR="${REMOTE_DIR:-~/chefadmin}"
+TAR_FILE="${SCRIPT_DIR}/ruoyi-backend-pg.tar.gz"
 
-if ! docker info >/dev/null 2>&1; then
-  echo "Docker 未运行，请先启动 Docker Desktop" >&2
-  exit 1
-fi
+run_build() {
+  "${SCRIPT_DIR}/build_image.sh"
+  "${SCRIPT_DIR}/build_save.sh"
+}
 
-echo "==> 拉取 ${PYTHON_BASE}"
-if ! docker pull --platform "${PLATFORM}" "${PYTHON_BASE}"; then
-  echo "拉取 ${PYTHON_BASE} 失败。" >&2
-  echo "请配置 Docker 镜像加速，或执行：" >&2
-  echo "  export PYTHON_BASE=docker.m.daocloud.io/library/python:3.10" >&2
-  echo "  ./build_backend.sh" >&2
-  exit 1
-fi
+run_deploy() {
+  if [[ ! -f "${TAR_FILE}" ]]; then
+    echo "缺少 ${TAR_FILE}，请先执行 ./build_backend.sh build" >&2
+    exit 1
+  fi
 
-BUILD_ARGS=(--platform "${PLATFORM}" --build-arg "PYTHON_BASE=${PYTHON_BASE}" -t ruoyi-backend-pg:latest)
-if [[ "${NO_CACHE:-}" == "1" ]]; then
-  BUILD_ARGS=(--no-cache "${BUILD_ARGS[@]}")
-fi
+  echo "==> 上传 ${TAR_FILE} -> ${REMOTE_USER_HOST}:${REMOTE_DIR}/"
+  ssh "${REMOTE_USER_HOST}" "mkdir -p ${REMOTE_DIR}"
+  scp "${TAR_FILE}" "${REMOTE_USER_HOST}:${REMOTE_DIR}/"
 
-echo "==> 构建 ruoyi-backend-pg（uv 经 PyPI/清华源安装，无需 ghcr.io）"
-docker build "${BUILD_ARGS[@]}" "${SCRIPT_DIR}/ruoyi-fastapi-backend"
+  echo "==> 远程 load 并启动 ruoyi-backend-pg"
+  ssh "${REMOTE_USER_HOST}" "cd ${REMOTE_DIR} && bash compose_only.sh"
+}
 
-echo "==> 完成: ruoyi-backend-pg:latest"
-docker images ruoyi-backend-pg:latest
+ACTION="${1:-all}"
+
+case "${ACTION}" in
+  build)
+    run_build
+    echo "==> 本地构建完成: ${TAR_FILE}"
+    ;;
+  deploy)
+    run_deploy
+    echo "==> 远程部署完成: ${REMOTE_USER_HOST}:${REMOTE_DIR}"
+    ;;
+  all)
+    run_build
+    run_deploy
+    echo "==> 构建并部署完成"
+    ;;
+  *)
+    echo "用法: $0 [build|deploy|all]" >&2
+    exit 1
+    ;;
+esac
