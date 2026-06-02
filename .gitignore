@@ -163,3 +163,5 @@ ruoyi-fastapi-frontend/.DS_Store
 nginx/html
 nginx/ssl/cert/*.key
 nginx/ssl/cert/*.pem
+
+ruoyi-backend-pg.tar.gz

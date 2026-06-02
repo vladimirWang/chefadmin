@@ -18,7 +18,6 @@ echo "等待 Redis 就绪..."
 for _ in $(seq 1 30); do
   if docker exec ruoyi-redis redis-cli ping 2>/dev/null | grep -q PONG; then
     echo "ruoyi-redis 已就绪 (PONG)"
-    docker compose -f "${RUOYI_COMPOSE_FILE}" -p chef-ruoyi-prod ps ruoyi-redis
     exit 0
   fi
   sleep 1
