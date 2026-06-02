@@ -2,6 +2,7 @@
 set -euo pipefail
 
 # Mac 本地：build_image → build_save → 上传 tar.gz → 远程 compose_only
+# 构建阶段会与远程启动 ruoyi-redis 并行执行，缩短整体耗时。
 #
 # 用法：
 #   ./build_backend.sh           # 构建 + 导出 + 部署（默认）
@@ -10,7 +11,7 @@ set -euo pipefail
 #
 # 环境变量：
 #   REMOTE_USER_HOST  默认 root@139.224.68.145
-#   REMOTE_DIR        默认 ~/private_chef_admin
+#   REMOTE_DIR        默认 ~/chefadmin
 #   NO_CACHE=1        传给 build_image.sh，无缓存构建
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -19,21 +20,77 @@ cd "$SCRIPT_DIR"
 REMOTE_USER_HOST="${REMOTE_USER_HOST:-root@139.224.68.145}"
 REMOTE_DIR="${REMOTE_DIR:-~/chefadmin}"
 TAR_FILE="${SCRIPT_DIR}/ruoyi-backend-pg.tar.gz"
+REMOTE_DEPLOY_FILES=(
+  docker-compose.yml
+  start-prod-redis.sh
+  compose_only.sh
+)
+
+sync_remote_deploy_files() {
+  echo "==> 同步部署脚本 -> ${REMOTE_USER_HOST}:${REMOTE_DIR}/"
+  ssh "${REMOTE_USER_HOST}" "mkdir -p ${REMOTE_DIR}"
+  scp "${REMOTE_DEPLOY_FILES[@]}" "${REMOTE_USER_HOST}:${REMOTE_DIR}/"
+}
+
+run_start_redis_remote() {
+  echo "==> 远程启动 ruoyi-redis"
+  ssh "${REMOTE_USER_HOST}" "cd ${REMOTE_DIR} && bash start-prod-redis.sh"
+}
+
+run_start_redis_remote_async() {
+  run_start_redis_remote &
+  echo $!
+}
+
+wait_async_job() {
+  local pid="$1"
+  local label="$2"
+  if ! wait "${pid}"; then
+    echo "==> ${label} 失败" >&2
+    exit 1
+  fi
+}
 
 run_build() {
   "${SCRIPT_DIR}/build_image.sh"
   "${SCRIPT_DIR}/build_save.sh"
 }
 
+run_build_parallel_redis() {
+  sync_remote_deploy_files
+
+  echo "==> 并行: 本地构建镜像 || 远程启动 ruoyi-redis"
+  local redis_pid
+  redis_pid="$(run_start_redis_remote_async)"
+
+  run_build
+
+  wait_async_job "${redis_pid}" "远程启动 ruoyi-redis"
+}
+
 run_deploy() {
+  local with_parallel_redis="${1:-1}"
+
   if [[ ! -f "${TAR_FILE}" ]]; then
     echo "缺少 ${TAR_FILE}，请先执行 ./build_backend.sh build" >&2
     exit 1
   fi
 
-  echo "==> 上传 ${TAR_FILE} -> ${REMOTE_USER_HOST}:${REMOTE_DIR}/"
-  ssh "${REMOTE_USER_HOST}" "mkdir -p ${REMOTE_DIR}"
-  scp "${TAR_FILE}" "${REMOTE_USER_HOST}:${REMOTE_DIR}/"
+  sync_remote_deploy_files
+
+  if [[ "${with_parallel_redis}" == "1" ]]; then
+    echo "==> 并行: 上传镜像包 || 远程启动 ruoyi-redis"
+    local redis_pid
+    redis_pid="$(run_start_redis_remote_async)"
+
+    echo "==> 上传 ${TAR_FILE} -> ${REMOTE_USER_HOST}:${REMOTE_DIR}/"
+    scp "${TAR_FILE}" "${REMOTE_USER_HOST}:${REMOTE_DIR}/"
+
+    wait_async_job "${redis_pid}" "远程启动 ruoyi-redis"
+  else
+    echo "==> 上传 ${TAR_FILE} -> ${REMOTE_USER_HOST}:${REMOTE_DIR}/"
+    scp "${TAR_FILE}" "${REMOTE_USER_HOST}:${REMOTE_DIR}/"
+  fi
 
   echo "==> 远程 load 并启动 ruoyi-backend-pg"
   ssh "${REMOTE_USER_HOST}" "cd ${REMOTE_DIR} && bash compose_only.sh"
@@ -51,8 +108,8 @@ case "${ACTION}" in
     echo "==> 远程部署完成: ${REMOTE_USER_HOST}:${REMOTE_DIR}"
     ;;
   all)
-    run_build
-    run_deploy
+    run_build_parallel_redis
+    run_deploy 0
     echo "==> 构建并部署完成"
     ;;
   *)

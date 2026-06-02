@@ -1,5 +1,5 @@
 #!/bin/bash
-
+set -euo pipefail
 
 gunzip -c ruoyi-backend-pg.tar.gz | docker load
 docker images | grep ruoyi-backend-pg
