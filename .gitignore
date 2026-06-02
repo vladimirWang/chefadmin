@@ -156,6 +156,9 @@ cython_debug/
 ruoyi-fastapi-backend/.env.dev
 ruoyi-fastapi-backend/.env.prod
 ruoyi-fastapi-frontend/.env.prod
+ruoyi-fastapi-backend/.DS_Store
+ruoyi-fastapi-frontend/.DS_Store
+
 
 nginx/html
 nginx/ssl/cert/*.key
